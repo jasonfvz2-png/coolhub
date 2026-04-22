@@ -1,11 +1,12 @@
--- Cool Hub v10 - Smooth Fix + Give Gun Category (Street War)
+-- Cool Hub v11 - Wall Check + Anti-Ciel + Give Gun Street War
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = workspace
 
 local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
+local camera = Workspace.CurrentCamera
 local mouse = player:GetMouse()
 
 local aimEnabled = false
@@ -26,8 +27,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 205, 0, 340)
-mainFrame.Position = UDim2.new(0.86, -102, 0.25, 0)
+mainFrame.Size = UDim2.new(0, 210, 0, 380)
+mainFrame.Position = UDim2.new(0.85, -105, 0.22, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -46,7 +47,7 @@ title.Font = Enum.Font.GothamBlack
 title.Parent = mainFrame
 
 local scroller = Instance.new("ScrollingFrame")
-scroller.Size = UDim2.new(1, -20, 1, -100)
+scroller.Size = UDim2.new(1, -20, 1, -110)
 scroller.Position = UDim2.new(0, 10, 0, 48)
 scroller.BackgroundTransparency = 1
 scroller.ScrollBarThickness = 5
@@ -92,7 +93,7 @@ local function createToggle(text, default, callback)
     end)
 end
 
--- Slider fixe (Smooth)
+-- Slider fixe
 local function createSlider(text, minVal, maxVal, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1,0,0,68)
@@ -126,21 +127,17 @@ local function createSlider(text, minVal, maxVal, default, callback)
     local dragging = false
     
     bar.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-        end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then dragging = true end
     end)
     
     UserInputService.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
-        end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then dragging = false end
     end)
     
     RunService.RenderStepped:Connect(function()
         if dragging then
             local percent = math.clamp((UserInputService:GetMouseLocation().X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-            value = math.floor(minVal + (maxVal - minVal) * percent * 100) / 100   -- arrondi propre
+            value = math.floor(minVal + (maxVal - minVal) * percent * 100) / 100
             fill.Size = UDim2.new(percent, 0, 1, 0)
             lbl.Text = text .. ": " .. value
             callback(value)
@@ -148,23 +145,64 @@ local function createSlider(text, minVal, maxVal, default, callback)
     end)
 end
 
--- Création des toggles et sliders
 createToggle("Aimbot", false, function(v) aimEnabled = v end)
 createSlider("FOV", 60, 320, 140, function(v) fov = v end)
 createSlider("Speed", 16, 90, 50, function(v) walkSpeed = v end)
 createSlider("Smooth", 0.02, 0.35, 0.12, function(v) smooth = v end)
 
--- ==================== CATÉGORIE GIVE GUN ====================
+-- ==================== WALL CHECK + ANTI-CIEL ====================
+local function hasWallBetween(origin, targetPos)
+    local direction = (targetPos - origin).Unit
+    local distance = (targetPos - origin).Magnitude
+    local ray = Ray.new(origin, direction * distance)
+    local hitPart = Workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
+    return hitPart ~= nil
+end
+
+local function getClosest()
+    local closest = nil
+    local bestDist = fov
+    
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character and plr.Character:FindFirstChild(aimPart) and plr.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoid = plr.Character:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local targetPos = plr.Character[aimPart].Position
+                local rootPos = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position
+                
+                if rootPos then
+                    -- Wall Check
+                    if hasWallBetween(rootPos + Vector3.new(0, 2, 0), targetPos) then continue end
+                    
+                    -- Anti-Ciel (ne lock pas trop haut)
+                    if targetPos.Y > rootPos.Y + 25 then continue end
+                    
+                    local screenPos, onScreen = camera:WorldToViewportPoint(targetPos)
+                    if onScreen then
+                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+                        if dist < bestDist then
+                            bestDist = dist
+                            closest = plr
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- ==================== GIVE GUN (Liste Street War) ====================
 local guns = {
-    "Glock", "Uzi", "Draco", "Skorpion", "AK-47", "Double Barrel", 
-    "FAMAS", "Tec-9", "P90", "BR14", "AUG", "PPSH41", "1911", 
-    "Mini Draco", "Vector", "UMP", "MPX", "SAIGA 12K"
+    "Glock", "Uzi", "Draco", "Mini Draco", "Skorpion", "Tec-9", 
+    "AK-47", "Double Barrel", "FAMAS", "BR14", "AUG", "P90", 
+    "Vector", "MPX", "PPSH41", "1911", "Hunting Rifle", "SAIGA 12K"
 }
 
 local selectedGun = guns[1]
 
 local gunFrame = Instance.new("Frame")
-gunFrame.Size = UDim2.new(1,0,0,95)
+gunFrame.Size = UDim2.new(1,0,0,110)
 gunFrame.BackgroundColor3 = Color3.fromRGB(30,30,37)
 gunFrame.Parent = scroller
 Instance.new("UICorner", gunFrame).CornerRadius = UDim.new(0,10)
@@ -172,7 +210,7 @@ Instance.new("UICorner", gunFrame).CornerRadius = UDim.new(0,10)
 local gunTitle = Instance.new("TextLabel")
 gunTitle.Size = UDim2.new(1,0,0,25)
 gunTitle.BackgroundTransparency = 1
-gunTitle.Text = "Give Gun"
+gunTitle.Text = "Give Gun - Street War"
 gunTitle.TextColor3 = Color3.fromRGB(0,170,255)
 gunTitle.TextScaled = true
 gunTitle.Font = Enum.Font.GothamBold
@@ -189,7 +227,7 @@ selectedLabel.Font = Enum.Font.Gotham
 selectedLabel.Parent = gunFrame
 
 local giveBtn = Instance.new("TextButton")
-giveBtn.Size = UDim2.new(0.95,0,0,35)
+giveBtn.Size = UDim2.new(0.95,0,0,38)
 giveBtn.Position = UDim2.new(0.025,0,0,58)
 giveBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 giveBtn.Text = "Donner l'arme"
@@ -199,35 +237,32 @@ giveBtn.Font = Enum.Font.GothamBold
 giveBtn.Parent = gunFrame
 Instance.new("UICorner", giveBtn).CornerRadius = UDim.new(0,8)
 
--- Changer d'arme (clic sur le bouton donne et change)
 giveBtn.MouseButton1Click:Connect(function()
-    -- Changer l'arme sélectionnée
     local idx = table.find(guns, selectedGun) or 1
     idx = (idx % #guns) + 1
     selectedGun = guns[idx]
     selectedLabel.Text = "Sélection : " .. selectedGun
     
-    -- Give l'arme
+    -- Tentative de give arme
     if player.Backpack then
-        local tool = nil
-        -- Tentative de trouver l'arme dans ReplicatedStorage ou Workspace
-        for _, obj in ipairs(game:GetDescendants()) do
-            if obj:IsA("Tool") and (obj.Name:lower() == selectedGun:lower() or obj.Name:find(selectedGun)) then
-                tool = obj:Clone()
+        local foundTool = nil
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Tool") and string.lower(obj.Name) == string.lower(selectedGun) then
+                foundTool = obj:Clone()
                 break
             end
         end
         
-        if tool then
-            tool.Parent = player.Backpack
+        if foundTool then
+            foundTool.Parent = player.Backpack
             print("✅ Arme donnée : " .. selectedGun)
         else
-            print("⚠️ Arme " .. selectedGun .. " non trouvée. Essaie d'acheter en jeu ou utilise un spawner.")
+            print("⚠️ " .. selectedGun .. " non trouvé directement. Essaie d'acheter en jeu ou utilise un gun spawner.")
         end
     end
 end)
 
--- Boutons Hide & Unload
+-- Hide & Unload
 local bottom = Instance.new("Frame")
 bottom.Size = UDim2.new(1,-20,0,40)
 bottom.Position = UDim2.new(0,10,1,-55)
@@ -260,7 +295,6 @@ hideBtn.MouseButton1Click:Connect(function()
     hideBtn.Text = mainFrame.Visible and "Hide" or "Show"
 end)
 
--- Unload parfait
 local renderConnection
 local circle = Drawing.new("Circle")
 circle.Thickness = 2
@@ -276,7 +310,7 @@ local function unloadHub()
     end
     circle:Remove()
     screenGui:Destroy()
-    print("Cool Hub déchargé complètement")
+    print("Cool Hub déchargé")
 end
 
 unloadBtn.MouseButton1Click:Connect(unloadHub)
@@ -292,29 +326,13 @@ renderConnection = RunService.RenderStepped:Connect(function()
     
     if not aimEnabled then return end
     
-    local closest = nil
-    local bestDist = fov
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character and plr.Character:FindFirstChild(aimPart) and plr.Character:FindFirstChild("Humanoid") then
-            if plr.Character.Humanoid.Health > 0 then
-                local pos, onScreen = camera:WorldToViewportPoint(plr.Character[aimPart].Position)
-                if onScreen then
-                    local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
-                    if dist < bestDist then
-                        bestDist = dist
-                        closest = plr
-                    end
-                end
-            end
-        end
-    end
-    
-    if closest and closest.Character and closest.Character:FindFirstChild(aimPart) then
-        local targetPos = closest.Character[aimPart].Position
+    local target = getClosest()
+    if target and target.Character and target.Character:FindFirstChild(aimPart) then
+        local targetPos = target.Character[aimPart].Position
         local current = camera.CFrame
         local targetCF = CFrame.lookAt(current.Position, targetPos)
         camera.CFrame = current:Lerp(targetCF, smooth)
     end
 end)
 
-print("Cool Hub v10 chargé - Smooth fixé + Give Gun ajouté")
+print("Cool Hub v11 chargé - Wall Check + Anti-Ciel + Give Gun Street War")
