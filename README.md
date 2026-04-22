@@ -1,70 +1,69 @@
--- Allusive Style Mini Hub v8 - Avec Give Gun pour Street War
+-- Cool Hub v9 - Smooth seulement (pas de Strength)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 local mouse = player:GetMouse()
 
 local aimEnabled = false
-local fov = 135
+local fov = 140
 local walkSpeed = 50
-local smoothness = 0.14
+local smooth = 0.12          -- Plus c'est bas = aimbot plus puissant
 local aimPart = "Head"
 
--- Sauvegarde vitesse originale
+-- Sauvegarde de la vitesse originale pour Unload
 local originalWalkSpeed = 16
 if player.Character and player.Character:FindFirstChild("Humanoid") then
     originalWalkSpeed = player.Character.Humanoid.WalkSpeed
 end
 
--- GUI (style Allusive)
+-- GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 300)
-mainFrame.Position = UDim2.new(0.86, -100, 0.25, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+mainFrame.Size = UDim2.new(0, 190, 0, 260)
+mainFrame.Position = UDim2.new(0.87, -95, 0.3, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 14)
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
 title.BackgroundTransparency = 1
-title.Text = "Allusive"
-title.TextColor3 = Color3.fromRGB(255, 55, 115)
+title.Text = "Cool Hub"
+title.TextColor3 = Color3.fromRGB(0, 170, 255)
 title.TextScaled = true
 title.Font = Enum.Font.GothamBlack
 title.Parent = mainFrame
 
 local scroller = Instance.new("ScrollingFrame")
-scroller.Size = UDim2.new(1, -20, 1, -110)
+scroller.Size = UDim2.new(1, -20, 1, -95)
 scroller.Position = UDim2.new(0, 10, 0, 48)
 scroller.BackgroundTransparency = 1
-scroller.ScrollBarThickness = 5
+scroller.ScrollBarThickness = 4
 scroller.Parent = mainFrame
 
 Instance.new("UIListLayout", scroller).Padding = UDim.new(0, 10)
 
--- Toggle & Slider (identiques à avant, avec fix strength)
+-- Toggle
 local function createToggle(text, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1,0,0,44)
-    frame.BackgroundColor3 = Color3.fromRGB(28,28,35)
+    frame.Size = UDim2.new(1,0,0,45)
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,37)
     frame.Parent = scroller
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,9)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
     
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(0.58,0,1,0)
+    lbl.Size = UDim2.new(0.6,0,1,0)
     lbl.BackgroundTransparency = 1
     lbl.Text = text
     lbl.TextColor3 = Color3.new(1,1,1)
@@ -74,34 +73,35 @@ local function createToggle(text, default, callback)
     lbl.Parent = frame
     
     local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0.37,0,0.78,0)
-    btn.Position = UDim2.new(0.6,0,0.11,0)
-    btn.BackgroundColor3 = default and Color3.fromRGB(70,200,90) or Color3.fromRGB(200,60,80)
+    btn.Size = UDim2.new(0.35,0,0.75,0)
+    btn.Position = UDim2.new(0.62,0,0.125,0)
+    btn.BackgroundColor3 = default and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(200, 50, 70)
     btn.Text = default and "ON" or "OFF"
     btn.TextColor3 = Color3.new(1,1,1)
     btn.TextScaled = true
     btn.Font = Enum.Font.GothamBold
     btn.Parent = frame
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,7)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
     
     local state = default
     btn.MouseButton1Click:Connect(function()
         state = not state
         btn.Text = state and "ON" or "OFF"
-        btn.BackgroundColor3 = state and Color3.fromRGB(70,200,90) or Color3.fromRGB(200,60,80)
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 100) or Color3.fromRGB(200, 50, 70)
         callback(state)
     end)
 end
 
+-- Slider (Smooth seulement)
 local function createSlider(text, minVal, maxVal, default, callback)
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(1,0,0,65)
-    frame.BackgroundColor3 = Color3.fromRGB(28,28,35)
+    frame.Size = UDim2.new(1,0,0,68)
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,37)
     frame.Parent = scroller
-    Instance.new("UICorner", frame).CornerRadius = UDim.new(0,9)
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
     
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1,0,0,24)
+    lbl.Size = UDim2.new(1,0,0,25)
     lbl.BackgroundTransparency = 1
     lbl.Text = text .. ": " .. default
     lbl.TextColor3 = Color3.new(1,1,1)
@@ -110,27 +110,31 @@ local function createSlider(text, minVal, maxVal, default, callback)
     lbl.Parent = frame
     
     local bar = Instance.new("Frame")
-    bar.Size = UDim2.new(1,-22,0,15)
-    bar.Position = UDim2.new(0,11,0,35)
+    bar.Size = UDim2.new(1,-24,0,14)
+    bar.Position = UDim2.new(0,12,0,37)
     bar.BackgroundColor3 = Color3.fromRGB(45,45,52)
     bar.Parent = frame
-    Instance.new("UICorner", bar).CornerRadius = UDim.new(0,8)
+    Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 7)
     
     local fill = Instance.new("Frame")
     fill.Size = UDim2.new((default-minVal)/(maxVal-minVal),0,1,0)
-    fill.BackgroundColor3 = Color3.fromRGB(255,55,115)
+    fill.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
     fill.Parent = bar
-    Instance.new("UICorner", fill).CornerRadius = UDim.new(0,8)
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 7)
     
     local value = default
     local dragging = false
     
     bar.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then dragging = true end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+        end
     end)
     
     UserInputService.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then dragging = false end
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
     end)
     
     RunService.RenderStepped:Connect(function()
@@ -144,73 +148,16 @@ local function createSlider(text, minVal, maxVal, default, callback)
     end)
 end
 
--- Ajout des features
+-- Ajout des éléments
 createToggle("Aimbot", false, function(v) aimEnabled = v end)
-createSlider("FOV", 70, 300, 135, function(v) fov = v end)
-createSlider("Speed", 16, 85, 50, function(v) walkSpeed = v end)
-createSlider("Strength", 0.08, 0.30, 0.14, function(v) smoothness = v end)
+createSlider("FOV", 60, 320, 140, function(v) fov = v end)
+createSlider("Speed", 16, 90, 50, function(v) walkSpeed = v end)
+createSlider("Smooth", 0.02, 0.35, 0.12, function(v) smooth = v end)   -- ← Plus bas = plus fort
 
--- ==================== SECTION GIVE GUN ====================
-local gunList = {
-    "Glock", "Uzi", "AK-47", "Double Barrel", "FAMAS", "Draco", 
-    "Skorpion", "BR14", "AUG", "PPSH41", "Hunting Rifle", "1911"
-}
-
-local selectedGun = gunList[1]
-
-local gunFrame = Instance.new("Frame")
-gunFrame.Size = UDim2.new(1,0,0,70)
-gunFrame.BackgroundColor3 = Color3.fromRGB(28,28,35)
-gunFrame.Parent = scroller
-Instance.new("UICorner", gunFrame).CornerRadius = UDim.new(0,9)
-
-local gunLabel = Instance.new("TextLabel")
-gunLabel.Size = UDim2.new(1,0,0,25)
-gunLabel.BackgroundTransparency = 1
-gunLabel.Text = "Give Gun : " .. selectedGun
-gunLabel.TextColor3 = Color3.new(1,1,1)
-gunLabel.TextScaled = true
-gunLabel.Font = Enum.Font.Gotham
-gunLabel.Parent = gunFrame
-
-local gunButton = Instance.new("TextButton")
-gunButton.Size = UDim2.new(0.95,0,0,35)
-gunButton.Position = UDim2.new(0.025,0,0,30)
-gunButton.BackgroundColor3 = Color3.fromRGB(255, 80, 120)
-gunButton.Text = "Give Selected Gun"
-gunButton.TextColor3 = Color3.new(1,1,1)
-gunButton.TextScaled = true
-gunButton.Font = Enum.Font.GothamBold
-gunButton.Parent = gunFrame
-Instance.new("UICorner", gunButton).CornerRadius = UDim.new(0,8)
-
--- Simple dropdown simulation (clic pour changer)
-gunButton.MouseButton1Click:Connect(function()
-    local currentIndex = table.find(gunList, selectedGun) or 1
-    currentIndex = currentIndex % #gunList + 1
-    selectedGun = gunList[currentIndex]
-    gunLabel.Text = "Give Gun : " .. selectedGun
-    
-    -- Tentative de give arme (méthode courante dans Street War)
-    if player.Character and player.Backpack then
-        -- Méthode 1 : Clone depuis ReplicatedStorage ou Lighting (souvent utilisé)
-        local tool = game:GetService("ReplicatedStorage"):FindFirstChild(selectedGun) 
-            or workspace:FindFirstChild(selectedGun, true)
-        
-        if tool and tool:IsA("Tool") then
-            tool:Clone().Parent = player.Backpack
-            print("Arme donnée : " .. selectedGun)
-        else
-            -- Méthode alternative : RemoteEvent si le jeu en a un
-            print("Arme " .. selectedGun .. " non trouvée directement. Essaie d'acheter en jeu ou utilise un spawner.")
-        end
-    end
-end)
-
--- Boutons Hide & Unload (Unload parfait)
+-- Boutons Hide & Unload
 local bottom = Instance.new("Frame")
 bottom.Size = UDim2.new(1,-20,0,40)
-bottom.Position = UDim2.new(0,10,1,-55)
+bottom.Position = UDim2.new(0,10,1,-52)
 bottom.BackgroundTransparency = 1
 bottom.Parent = mainFrame
 
@@ -227,7 +174,7 @@ Instance.new("UICorner", hideBtn).CornerRadius = UDim.new(0,8)
 local unloadBtn = Instance.new("TextButton")
 unloadBtn.Size = UDim2.new(0.48,0,1,0)
 unloadBtn.Position = UDim2.new(0.52,0,0,0)
-unloadBtn.BackgroundColor3 = Color3.fromRGB(190,40,55)
+unloadBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 60)
 unloadBtn.Text = "Unload"
 unloadBtn.TextColor3 = Color3.new(1,1,1)
 unloadBtn.TextScaled = true
@@ -235,18 +182,20 @@ unloadBtn.Font = Enum.Font.GothamSemibold
 unloadBtn.Parent = bottom
 Instance.new("UICorner", unloadBtn).CornerRadius = UDim.new(0,8)
 
+-- Hide
 hideBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = not mainFrame.Visible
     hideBtn.Text = mainFrame.Visible and "Hide" or "Show"
 end)
 
+-- Unload parfait
 local renderConnection
 local circle = Drawing.new("Circle")
-circle.Thickness = 2.2
-circle.Color = Color3.fromRGB(255, 55, 115)
+circle.Thickness = 2
+circle.Color = Color3.fromRGB(0, 170, 255)
 circle.Filled = false
-circle.Transparency = 0.65
-circle.NumSides = 64
+circle.Transparency = 0.7
+circle.NumSides = 60
 
 local function unloadHub()
     if renderConnection then renderConnection:Disconnect() end
@@ -255,44 +204,51 @@ local function unloadHub()
     end
     circle:Remove()
     screenGui:Destroy()
-    print("Hub déchargé - tout revenu à l'état normal")
+    print("Cool Hub complètement déchargé")
 end
 
 unloadBtn.MouseButton1Click:Connect(unloadHub)
 
--- Boucle principale
+-- Aimbot Loop
+local function getClosest()
+    local closest = nil
+    local bestDist = fov
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character and plr.Character:FindFirstChild(aimPart) and plr.Character:FindFirstChild("Humanoid") then
+            if plr.Character.Humanoid.Health > 0 then
+                local pos, onScreen = camera:WorldToViewportPoint(plr.Character[aimPart].Position)
+                if onScreen then
+                    local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+                    if dist < bestDist then
+                        bestDist = dist
+                        closest = plr
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
 renderConnection = RunService.RenderStepped:Connect(function()
+    -- Speed
     if player.Character and player.Character:FindFirstChild("Humanoid") then
         player.Character.Humanoid.WalkSpeed = walkSpeed
     end
     
+    -- FOV Circle
     circle.Radius = fov
     circle.Position = Vector2.new(mouse.X, mouse.Y + 36)
     
     if not aimEnabled then return end
     
-    -- Aimbot (getClosest simplifié)
-    local closest = nil
-    local minDist = fov
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character and plr.Character:FindFirstChild(aimPart) and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 then
-            local pos, onScreen = camera:WorldToViewportPoint(plr.Character[aimPart].Position)
-            if onScreen then
-                local dist = (Vector2.new(pos.X, pos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
-                if dist < minDist then
-                    minDist = dist
-                    closest = plr
-                end
-            end
-        end
-    end
-    
-    if closest and closest.Character and closest.Character:FindFirstChild(aimPart) then
-        local targetPos = closest.Character[aimPart].Position
+    local target = getClosest()
+    if target and target.Character and target.Character:FindFirstChild(aimPart) then
+        local targetPos = target.Character[aimPart].Position
         local current = camera.CFrame
         local targetCF = CFrame.lookAt(current.Position, targetPos)
-        camera.CFrame = current:Lerp(targetCF, smoothness)
+        camera.CFrame = current:Lerp(targetCF, smooth)
     end
 end)
 
-print("Allusive Hub v8 chargé avec Give Gun (Street War)")
+print("Cool Hub chargé - Smooth seulement (plus bas = aimbot plus fort)")
