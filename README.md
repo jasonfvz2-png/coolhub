@@ -1,4 +1,4 @@
--- Cool Hub v11 - Wall Check + Anti-Ciel + Give Gun Street War
+-- Cool Hub v12 - Aimbot Fixé (Wall Check + Anti-Ciel) + Give Gun Amélioré (Street War)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -10,9 +10,9 @@ local camera = Workspace.CurrentCamera
 local mouse = player:GetMouse()
 
 local aimEnabled = false
-local fov = 140
+local fov = 145
 local walkSpeed = 50
-local smooth = 0.12
+local smooth = 0.11
 local aimPart = "Head"
 
 -- Sauvegarde vitesse originale
@@ -27,8 +27,8 @@ screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 210, 0, 380)
-mainFrame.Position = UDim2.new(0.85, -105, 0.22, 0)
+mainFrame.Size = UDim2.new(0, 210, 0, 390)
+mainFrame.Position = UDim2.new(0.85, -105, 0.2, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -47,7 +47,7 @@ title.Font = Enum.Font.GothamBlack
 title.Parent = mainFrame
 
 local scroller = Instance.new("ScrollingFrame")
-scroller.Size = UDim2.new(1, -20, 1, -110)
+scroller.Size = UDim2.new(1, -20, 1, -115)
 scroller.Position = UDim2.new(0, 10, 0, 48)
 scroller.BackgroundTransparency = 1
 scroller.ScrollBarThickness = 5
@@ -93,7 +93,7 @@ local function createToggle(text, default, callback)
     end)
 end
 
--- Slider fixe
+-- Slider
 local function createSlider(text, minVal, maxVal, default, callback)
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1,0,0,68)
@@ -146,17 +146,24 @@ local function createSlider(text, minVal, maxVal, default, callback)
 end
 
 createToggle("Aimbot", false, function(v) aimEnabled = v end)
-createSlider("FOV", 60, 320, 140, function(v) fov = v end)
+createSlider("FOV", 60, 320, 145, function(v) fov = v end)
 createSlider("Speed", 16, 90, 50, function(v) walkSpeed = v end)
-createSlider("Smooth", 0.02, 0.35, 0.12, function(v) smooth = v end)
+createSlider("Smooth", 0.02, 0.35, 0.11, function(v) smooth = v end)
 
--- ==================== WALL CHECK + ANTI-CIEL ====================
-local function hasWallBetween(origin, targetPos)
-    local direction = (targetPos - origin).Unit
-    local distance = (targetPos - origin).Magnitude
-    local ray = Ray.new(origin, direction * distance)
-    local hitPart = Workspace:FindPartOnRayWithIgnoreList(ray, {player.Character})
-    return hitPart ~= nil
+-- ==================== WALL CHECK AMÉLIORÉ ====================
+local function isVisible(targetPos)
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return false end
+    
+    local origin = root.Position + Vector3.new(0, 3, 0)  -- un peu au-dessus pour éviter les pieds
+    local direction = (targetPos - origin)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {player.Character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.IgnoreWater = true
+    
+    local result = Workspace:Raycast(origin, direction, raycastParams)
+    return result == nil  -- rien entre toi et la cible = visible
 end
 
 local function getClosest()
@@ -165,25 +172,25 @@ local function getClosest()
     
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild(aimPart) and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local humanoid = plr.Character:FindFirstChild("Humanoid")
-            if humanoid and humanoid.Health > 0 then
+            local hum = plr.Character:FindFirstChild("Humanoid")
+            if hum and hum.Health > 0 then
                 local targetPos = plr.Character[aimPart].Position
-                local rootPos = player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position
                 
-                if rootPos then
-                    -- Wall Check
-                    if hasWallBetween(rootPos + Vector3.new(0, 2, 0), targetPos) then continue end
-                    
-                    -- Anti-Ciel (ne lock pas trop haut)
-                    if targetPos.Y > rootPos.Y + 25 then continue end
-                    
-                    local screenPos, onScreen = camera:WorldToViewportPoint(targetPos)
-                    if onScreen then
-                        local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
-                        if dist < bestDist then
-                            bestDist = dist
-                            closest = plr
-                        end
+                -- Anti-Ciel + Anti-sol trop bas
+                local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                if myRoot and (targetPos.Y > myRoot.Position.Y + 30 or targetPos.Y < myRoot.Position.Y - 20) then
+                    continue
+                end
+                
+                -- Wall Check amélioré
+                if not isVisible(targetPos) then continue end
+                
+                local screenPos, onScreen = camera:WorldToViewportPoint(targetPos)
+                if onScreen then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(mouse.X, mouse.Y)).Magnitude
+                    if dist < bestDist then
+                        bestDist = dist
+                        closest = plr
                     end
                 end
             end
@@ -192,17 +199,17 @@ local function getClosest()
     return closest
 end
 
--- ==================== GIVE GUN (Liste Street War) ====================
+-- ==================== GIVE GUN AMÉLIORÉ ====================
 local guns = {
     "Glock", "Uzi", "Draco", "Mini Draco", "Skorpion", "Tec-9", 
     "AK-47", "Double Barrel", "FAMAS", "BR14", "AUG", "P90", 
-    "Vector", "MPX", "PPSH41", "1911", "Hunting Rifle", "SAIGA 12K"
+    "Vector", "MPX", "PPSH41", "1911", "SAIGA 12K", "Hunting Rifle"
 }
 
 local selectedGun = guns[1]
 
 local gunFrame = Instance.new("Frame")
-gunFrame.Size = UDim2.new(1,0,0,110)
+gunFrame.Size = UDim2.new(1,0,0,115)
 gunFrame.BackgroundColor3 = Color3.fromRGB(30,30,37)
 gunFrame.Parent = scroller
 Instance.new("UICorner", gunFrame).CornerRadius = UDim.new(0,10)
@@ -243,21 +250,33 @@ giveBtn.MouseButton1Click:Connect(function()
     selectedGun = guns[idx]
     selectedLabel.Text = "Sélection : " .. selectedGun
     
-    -- Tentative de give arme
+    -- Méthode améliorée pour Street War
     if player.Backpack then
-        local foundTool = nil
+        local toolFound = nil
+        
+        -- Cherche dans ReplicatedStorage, Workspace, et descendants
         for _, obj in ipairs(Workspace:GetDescendants()) do
             if obj:IsA("Tool") and string.lower(obj.Name) == string.lower(selectedGun) then
-                foundTool = obj:Clone()
+                toolFound = obj:Clone()
                 break
             end
         end
         
-        if foundTool then
-            foundTool.Parent = player.Backpack
+        if not toolFound then
+            -- Recherche plus large (noms partiels)
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("Tool") and string.find(string.lower(obj.Name), string.lower(selectedGun)) then
+                    toolFound = obj:Clone()
+                    break
+                end
+            end
+        end
+        
+        if toolFound then
+            toolFound.Parent = player.Backpack
             print("✅ Arme donnée : " .. selectedGun)
         else
-            print("⚠️ " .. selectedGun .. " non trouvé directement. Essaie d'acheter en jeu ou utilise un gun spawner.")
+            print("⚠️ Impossible de trouver " .. selectedGun .. " automatiquement. Achète-la en jeu ou utilise un gun spawner.")
         end
     end
 end)
@@ -265,7 +284,7 @@ end)
 -- Hide & Unload
 local bottom = Instance.new("Frame")
 bottom.Size = UDim2.new(1,-20,0,40)
-bottom.Position = UDim2.new(0,10,1,-55)
+bottom.Position = UDim2.new(0,10,1,-60)
 bottom.BackgroundTransparency = 1
 bottom.Parent = mainFrame
 
@@ -297,11 +316,11 @@ end)
 
 local renderConnection
 local circle = Drawing.new("Circle")
-circle.Thickness = 2
+circle.Thickness = 2.2
 circle.Color = Color3.fromRGB(0,170,255)
 circle.Filled = false
-circle.Transparency = 0.7
-circle.NumSides = 60
+circle.Transparency = 0.65
+circle.NumSides = 64
 
 local function unloadHub()
     if renderConnection then renderConnection:Disconnect() end
@@ -335,4 +354,4 @@ renderConnection = RunService.RenderStepped:Connect(function()
     end
 end)
 
-print("Cool Hub v11 chargé - Wall Check + Anti-Ciel + Give Gun Street War")
+print("Cool Hub v12 chargé - Aimbot (Wall Check amélioré) + Give Gun optimisé pour Street War")
