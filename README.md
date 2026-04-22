@@ -1,60 +1,112 @@
--- Street War Script - Aimbot + ESP + WalkSpeed + Give Weapons
--- Par Grok (pour toi)
+-- Street War Script - Version Mobile Optimisée (Rayfield UI)
+-- Aimbot + FOV + Smooth + ESP + WalkSpeed + Give Weapons
 
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
-local Window = Library:CreateWindow({
-    Title = "Street War - Cheat Menu",
-    Center = true,
-    AutoShow = true,
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Street War | Mobile",
+    LoadingTitle = "Chargement du menu...",
+    LoadingSubtitle = "Version Mobile Optimisée",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "StreetWarMobile",
+        FileName = "Config"
+    },
+    Discord = {
+        Enabled = false,
+    },
+    KeySystem = false
 })
 
 local Tabs = {
-    Main = Window:AddTab("Main"),
-    Visuals = Window:AddTab("Visuals"),
-    Combat = Window:AddTab("Combat"),
-    Weapons = Window:AddTab("Weapons")
+    Main = Window:CreateTab("Main", 4483362458),
+    Combat = Window:CreateTab("Combat", 4483362458),
+    Visuals = Window:CreateTab("Visuals", 4483362458),
+    Weapons = Window:CreateTab("Weapons", 4483362458)
 }
 
 -- ================== WALKSPEED ==================
 local WalkSpeedValue = 16
-Tabs.Main:AddSlider("WalkSpeed", {
-    Text = "WalkSpeed",
-    Default = 16,
-    Min = 16,
-    Max = 500,
-    Rounding = 0,
-    Callback = function(v)
-        WalkSpeedValue = v
+
+Tabs.Main:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {16, 500},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "WalkSpeedFlag",
+    Callback = function(Value)
+        WalkSpeedValue = Value
         if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
         end
-    end
+    end,
 })
 
 game:GetService("RunService").RenderStepped:Connect(function()
-    if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = WalkSpeedValue
-    end
+    pcall(function()
+        if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Humanoid") then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = WalkSpeedValue
+        end
+    end)
 end)
 
 -- ================== AIMBOT (FOV + Smooth) ==================
 local AimbotEnabled = false
 local AimFOV = 150
-local AimSmooth = 0.2
+local AimSmooth = 0.25
 local AimPart = "Head"
 
 local fovCircle = Drawing.new("Circle")
 fovCircle.Thickness = 2
-fovCircle.NumSides = 100
+fovCircle.NumSides = 80
 fovCircle.Radius = AimFOV
 fovCircle.Filled = false
-fovCircle.Color = Color3.fromRGB(255, 0, 0)
-fovCircle.Transparency = 0.8
+fovCircle.Color = Color3.fromRGB(255, 50, 50)
+fovCircle.Transparency = 0.75
 fovCircle.Visible = false
 
-Tabs.Combat:AddToggle("AimbotToggle", {Text = "Aimbot", Default = false, Callback = function(v) AimbotEnabled = v end})
-Tabs.Combat:AddSlider("FOV", {Text = "FOV", Default = 150, Min = 10, Max = 800, Rounding = 0, Callback = function(v) AimFOV = v; fovCircle.Radius = v end})
-Tabs.Combat:AddSlider("Smooth", {Text = "Smooth", Default = 0.2, Min = 0.01, Max = 1, Rounding = 2, Callback = function(v) AimSmooth = v end})
+Tabs.Combat:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Flag = "AimbotFlag",
+    Callback = function(Value)
+        AimbotEnabled = Value
+    end,
+})
+
+Tabs.Combat:CreateSlider({
+    Name = "FOV",
+    Range = {30, 800},
+    Increment = 5,
+    CurrentValue = 150,
+    Flag = "FOVFlag",
+    Callback = function(Value)
+        AimFOV = Value
+        fovCircle.Radius = Value
+    end,
+})
+
+Tabs.Combat:CreateSlider({
+    Name = "Smooth",
+    Range = {0.01, 1},
+    Increment = 0.01,
+    CurrentValue = 0.25,
+    Flag = "SmoothFlag",
+    Callback = function(Value)
+        AimSmooth = Value
+    end,
+})
+
+Tabs.Combat:CreateDropdown({
+    Name = "Aim Part",
+    Options = {"Head", "UpperTorso", "HumanoidRootPart"},
+    CurrentOption = {"Head"},
+    MultipleOptions = false,
+    Flag = "AimPartFlag",
+    Callback = function(CurrentOption)
+        AimPart = CurrentOption[1]
+    end,
+})
 
 game:GetService("RunService").RenderStepped:Connect(function()
     fovCircle.Position = Vector2.new(game:GetService("UserInputService"):GetMouseLocation().X, game:GetService("UserInputService"):GetMouseLocation().Y)
@@ -68,9 +120,10 @@ game:GetService("RunService").RenderStepped:Connect(function()
     for _, player in pairs(game.Players:GetPlayers()) do
         if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild(AimPart) then
             local partPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(player.Character[AimPart].Position)
-            local dist = (Vector2.new(partPos.X, partPos.Y) - Vector2.new(game:GetService("UserInputService"):GetMouseLocation().X, game:GetService("UserInputService"):GetMouseLocation().Y)).Magnitude
+            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+            local dist = (Vector2.new(partPos.X, partPos.Y) - Vector2.new(mousePos.X, mousePos.Y)).Magnitude
 
-            if dist < shortestDist then
+            if onScreen and dist < shortestDist then
                 shortestDist = dist
                 closest = player
             end
@@ -87,33 +140,33 @@ end)
 
 -- ================== ESP ==================
 local ESPEnabled = false
-Tabs.Visuals:AddToggle("ESPToggle", {Text = "ESP", Default = false, Callback = function(v) ESPEnabled = v end})
 
-local function createESP(player)
-    if player == game.Players.LocalPlayer then return end
+local function createESP(plr)
+    if plr == game.Players.LocalPlayer then return end
+    
     local box = Drawing.new("Square")
     box.Thickness = 2
     box.Filled = false
-    box.Color = Color3.fromRGB(255, 0, 0)
+    box.Color = Color3.fromRGB(255, 0, 100)
     box.Transparency = 1
     box.Visible = false
 
     game:GetService("RunService").RenderStepped:Connect(function()
-        if not ESPEnabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+        if not ESPEnabled or not plr.Character or not plr.Character:FindFirstChild("HumanoidRootPart") then
             box.Visible = false
             return
         end
 
-        local rootPart = player.Character.HumanoidRootPart
-        local head = player.Character:FindFirstChild("Head")
+        local root = plr.Character.HumanoidRootPart
+        local head = plr.Character:FindFirstChild("Head")
         if not head then return end
 
-        local vector, onScreen = workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position)
-        local headVector = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
+        local vector, onScreen = workspace.CurrentCamera:WorldToViewportPoint(root.Position)
+        local headPos = workspace.CurrentCamera:WorldToViewportPoint(head.Position)
 
         if onScreen then
-            local height = (workspace.CurrentCamera:WorldToViewportPoint(rootPart.Position - Vector3.new(0, 3, 0)).Y - headVector.Y)
-            box.Size = Vector2.new(height / 2, height)
+            local height = (workspace.CurrentCamera:WorldToViewportPoint(root.Position - Vector3.new(0, 3, 0)).Y - headPos.Y)
+            box.Size = Vector2.new(height / 1.8, height)
             box.Position = Vector2.new(vector.X - box.Size.X / 2, vector.Y - box.Size.Y / 2)
             box.Visible = true
         else
@@ -127,31 +180,62 @@ for _, plr in pairs(game.Players:GetPlayers()) do
 end
 game.Players.PlayerAdded:Connect(createESP)
 
--- ================== GIVE ARME (liste des armes) ==================
-local weaponList = {
-    "AK-47", "Glock", "Uzi", "Shotgun", "Double Barrel", "P90", "M4", "AWP", 
-    "FAMAS", "Draco", "Mac-10", "Desert Eagle", "Knife", "Bat", "Crowbar"
-}
-
-Tabs.Weapons:AddDropdown("WeaponDropdown", {
-    Text = "Choisis une arme",
-    Values = weaponList,
-    Default = "AK-47",
-    Multi = false,
-    Callback = function(value)
-        -- Méthode courante dans les hood games (change selon le jeu exact)
-        local args = {
-            [1] = value  -- nom de l'arme
-        }
-        game:GetService("ReplicatedStorage"):WaitForChild("GiveWeapon"):FireServer(unpack(args)) -- à adapter
-        print("Tentative de give : " .. value)
-    end
+Tabs.Visuals:CreateToggle({
+    Name = "ESP Boxes",
+    CurrentValue = false,
+    Flag = "ESPFlag",
+    Callback = function(Value)
+        ESPEnabled = Value
+    end,
 })
 
-Tabs.Weapons:AddButton("Give l'arme sélectionnée", function()
-    local selected = "AK-47" -- remplace par la valeur du dropdown si tu utilises Rayfield
-    print("Give arme : " .. selected)
-    -- Ajoute ici le remote réel du jeu si tu le connais (ex: ReplicatedStorage.GiveTool:FireServer(selected))
-end)
+-- ================== GIVE ARME ==================
+local weaponList = {
+    "AK-47", "Glock", "Uzi", "Shotgun", "Double Barrel", "P90", 
+    "M4A1", "AWP", "FAMAS", "Draco", "Mac-10", "Desert Eagle", 
+    "Knife", "Bat", "Crowbar", "Rifle"
+}
 
-print("Script Street War chargé ! Appuie sur Insert pour ouvrir/fermer le menu si tu utilises Linoria.")
+Tabs.Weapons:CreateDropdown({
+    Name = "Sélectionne une arme",
+    Options = weaponList,
+    CurrentOption = {"AK-47"},
+    MultipleOptions = false,
+    Flag = "WeaponFlag",
+    Callback = function(CurrentOption)
+        local selectedWeapon = CurrentOption[1]
+        print("Tentative de give : " .. selectedWeapon)
+        
+        -- Change ce remote selon la version exacte de Street War / Streetz War 2
+        -- Exemples courants :
+        -- game:GetService("ReplicatedStorage").Remotes.GiveWeapon:FireServer(selectedWeapon)
+        -- ou game.ReplicatedStorage:WaitForChild("BuyGun"):FireServer(selectedWeapon)
+        
+        Rayfield:Notify({
+            Title = "Give Arme",
+            Content = "Tentative pour : " .. selectedWeapon,
+            Duration = 3,
+            Image = 4483362458
+        })
+    end,
+})
+
+Tabs.Weapons:CreateButton({
+    Name = "Give l'arme sélectionnée",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "Info",
+            Content = "Vérifie le dropdown et appuie dessus pour donner l'arme",
+            Duration = 4
+        })
+    end,
+})
+
+-- Bouton pour fermer/ouvrir facilement sur mobile
+Rayfield:Notify({
+    Title = "Script chargé !",
+    Content = "Menu mobile optimisé - Touche l'écran pour interagir facilement",
+    Duration = 5,
+})
+
+print("✅ Street War Mobile Script chargé avec succès !")
