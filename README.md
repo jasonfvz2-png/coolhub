@@ -1,96 +1,120 @@
--- Cool Hub - Rivals (Version Rework - Sans Rayfield - Mobile Friendly)
+-- =============================================
+--   Cool Hub - Rivals Edition
+--   Version propre & humaine (2026)
+--   Infinite Keys + Unlock All Weapons & Cosmetics
+-- =============================================
 
-print("✅ Cool Hub Rivals Rework chargé")
+print("✅ Cool Hub - Rivals chargé avec succès !")
 
--- Création d'un menu simple et petit
+-- Création du GUI (petit et optimisé mobile)
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "CoolHubRivals"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = playerGui
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 220, 0, 280)
-Frame.Position = UDim2.new(0.05, 0, 0.3, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Frame.BorderSizePixel = 0
-Frame.Parent = ScreenGui
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 240, 0, 320)
+MainFrame.Position = UDim2.new(0.05, 0, 0.25, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true  -- Tu peux déplacer le menu
+MainFrame.Parent = ScreenGui
 
+-- Titre
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundColor3 = Color3.fromRGB(255, 0, 100)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(255, 40, 100)
 Title.Text = "Cool Hub - Rivals"
-Title.TextColor3 = Color3.new(1,1,1)
+Title.TextColor3 = Color3.new(1, 1, 1)
 Title.TextScaled = true
-Title.Parent = Frame
+Title.Font = Enum.Font.GothamBold
+Title.Parent = MainFrame
 
-local function CreateButton(name, yPos, callback)
-    local Btn = Instance.new("TextButton")
-    Btn.Size = UDim2.new(0.9, 0, 0, 35)
-    Btn.Position = UDim2.new(0.05, 0, 0, yPos)
-    Btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    Btn.Text = name
-    Btn.TextColor3 = Color3.new(1,1,1)
-    Btn.TextScaled = true
-    Btn.Parent = Frame
-    Btn.MouseButton1Click:Connect(callback)
-    return Btn
+-- Fonction pour créer des boutons facilement
+local function CreateButton(text, positionY, callback)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0.9, 0, 0, 38)
+    Button.Position = UDim2.new(0.05, 0, 0, positionY)
+    Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    Button.Text = text
+    Button.TextColor3 = Color3.new(1, 1, 1)
+    Button.TextScaled = true
+    Button.Font = Enum.Font.GothamSemibold
+    Button.Parent = MainFrame
+    
+    Button.MouseButton1Click:Connect(function()
+        Button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)  -- Effet visuel
+        task.wait(0.1)
+        Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+        callback()
+    end)
 end
 
 -- ================== INFINITE KEYS ==================
-CreateButton("🔑 Give 100k Keys (x10)", 40, function()
+CreateButton("🔑 Donner 100 000 Keys (x10)", 50, function()
     for i = 1, 10 do
         pcall(function()
             game:GetService("ReplicatedStorage").Remotes.GiveKeys:FireServer(100000)
-            game:GetService("ReplicatedStorage").Remotes.AddKeys:FireServer(100000)
         end)
     end
-    print("100k Keys envoyées x10")
+    print("💰 100 000 Keys envoyées x10 fois")
 end)
 
-CreateButton("🔁 Infinite Keys Loop ON", 85, function()
-    getgenv().KeysLoop = true
+CreateButton("🔁 Activer Infinite Keys (Loop)", 95, function()
+    getgenv().InfiniteKeysLoop = true
+    
     spawn(function()
-        while getgenv().KeysLoop do
+        while getgenv().InfiniteKeysLoop do
             pcall(function()
-                game:GetService("ReplicatedStorage").Remotes.GiveKeys:FireServer(50000)
+                game:GetService("ReplicatedStorage").Remotes.GiveKeys:FireServer(60000)
             end)
-            task.wait(0.4)
+            task.wait(0.35)
         end
     end)
-    print("Infinite Keys Loop activé")
+    
+    print("♾️ Infinite Keys Loop activé")
 end)
 
-CreateButton("⛔ Stop Keys Loop", 130, function()
-    getgenv().KeysLoop = false
-    print("Keys Loop arrêté")
+CreateButton("⛔ Arrêter Infinite Keys", 140, function()
+    getgenv().InfiniteKeysLoop = false
+    print("⛔ Infinite Keys arrêté")
 end)
 
 -- ================== UNLOCK ALL ==================
-CreateButton("🔫 Unlock ALL Weapons", 175, function()
+CreateButton("🔫 Débloquer TOUTES les Armes", 185, function()
     pcall(function()
-        local weapons = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons") or game:GetService("ReplicatedStorage"):FindFirstChild("WeaponData")
-        if weapons then
-            for _, weapon in pairs(weapons:GetDescendants()) do
-                if weapon:IsA("StringValue") or weapon:IsA("Folder") then
-                    game:GetService("ReplicatedStorage").Remotes.UnlockWeapon:FireServer(weapon.Name)
+        local weaponsFolder = game:GetService("ReplicatedStorage"):FindFirstChild("Weapons") 
+                          or game:GetService("ReplicatedStorage"):FindFirstChild("WeaponData")
+        
+        if weaponsFolder then
+            for _, item in pairs(weaponsFolder:GetDescendants()) do
+                if item:IsA("StringValue") or item:IsA("Folder") then
+                    pcall(function()
+                        game:GetService("ReplicatedStorage").Remotes.UnlockWeapon:FireServer(item.Name)
+                    end)
                 end
             end
         end
     end)
-    print("Tentative Unlock All Weapons")
+    print("🔫 Tentative de déblocage de toutes les armes")
 end)
 
-CreateButton("🌟 Unlock ALL Cosmetics", 220, function()
+CreateButton("🌟 Débloquer TOUS les Cosmetics", 230, function()
     pcall(function()
         game:GetService("ReplicatedStorage").Remotes.UnlockAllCosmetics:FireServer()
         game:GetService("ReplicatedStorage").Events.UnlockSkin:FireServer("all")
     end)
-    print("Tentative Unlock All Cosmetics")
+    print("🌟 Tentative de déblocage de tous les cosmétiques")
 end)
 
--- Bouton pour cacher le menu
-CreateButton("🔄 Cacher Menu", 265, function()
-    Frame.Visible = not Frame.Visible
+-- Bouton pour cacher le menu (très utile sur mobile)
+CreateButton("🔄 Cacher / Afficher le Menu", 275, function()
+    MainFrame.Visible = not MainFrame.Visible
 end)
 
-print("Menu Cool Hub prêt - Appuie sur les boutons !")
+-- Message de bienvenue
+print("🎉 Cool Hub prêt ! Déplace le menu en le glissant avec ton doigt.")
